@@ -1,0 +1,67 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-bg {
+  background: #e6f7ff;
+}
+
+.student-bg {
+  background: #fff4e6;
+}
+
+.sidebar {
+  width: 250px;
+  background: #1f2937;
+  padding: 20px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-btn {
+  background: #374151;
+  color: white;
+  border: none;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.sidebar-btn:hover {
+  background: #4b5563;
+}
+
+.logout-btn {
+  margin-top: auto;
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.content {
+  flex: 1;
+  padding: 40px;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}

@@ -1,0 +1,31 @@
+.login-page {
+  height: 100vh;
+  background: #e6ccff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-box {
+  background: white;
+  padding: 50px;
+  width: 400px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-box input {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+.login-box button {
+  padding: 12px;
+  border-radius: 10px;
+  background: #7a5cff;
+  color: white;
+  border: none;
+}

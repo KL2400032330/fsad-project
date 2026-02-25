@@ -1,0 +1,32 @@
+.role-page {
+  height: 100vh;
+  background: #cce7ff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.tile-container {
+  display: flex;
+  gap: 60px;
+  margin-top: 40px;
+}
+
+.tile {
+  width: 250px;
+  height: 150px;
+  background: white;
+  font-size: 28px;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.tile:hover {
+  transform: scale(1.1);
+}
