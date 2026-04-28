@@ -85,15 +85,19 @@ router.delete("/feedback/:id", auth, async (req, res) => {
 
 // --- OVERVIEW ---
 router.get("/overview", auth, async (req, res) => {
-  const [students, jobs, applications, hours] = await Promise.all([
-    Student.countDocuments(),
-    Job.countDocuments(),
-    Application.countDocuments(),
-    Hours.find()
-  ]);
-  const totalHours = hours.reduce((sum, h) => sum + h.hours, 0);
-  const pending = await Application.countDocuments({ status: "Pending" });
-  res.json({ students, jobs, applications, totalHours, pending });
+  try {
+    const [students, jobs, applications, hours] = await Promise.all([
+      Student.countDocuments(),
+      Job.countDocuments(),
+      Application.countDocuments(),
+      Hours.find()
+    ]);
+    const totalHours = hours.reduce((sum, h) => sum + h.hours, 0);
+    const pending = await Application.countDocuments({ status: "Pending" });
+    res.json({ students, jobs, applications, totalHours, pending });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;
