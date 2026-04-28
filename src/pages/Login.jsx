@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ReCAPTCHA from "react-google-recaptcha";
 import { useTheme } from "../context/ThemeContext";
+import { authStore } from "../utils/storage";
 import "../styles/login.css";
 
 export default function Login() {
@@ -19,7 +20,7 @@ export default function Login() {
   const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
   const useFakeCaptcha = !SITE_KEY || SITE_KEY === "your_site_key";
 
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
     setError("");
 
@@ -29,33 +30,17 @@ export default function Login() {
     }
 
     setLoading(true);
-    try {
-      const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-      const res = await fetch(`${BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || "Login failed");
+    setTimeout(() => {
+      const result = authStore.login(username, password, role);
+      if (!result.ok) {
+        setError(result.message);
         captchaRef.current?.reset();
         setCaptchaDone(false);
+        setLoading(false);
         return;
       }
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
-      localStorage.setItem("username", data.username);
-
       navigate(role === "admin" ? "/admin" : "/student");
-    } catch {
-      setError("Cannot connect to server. Make sure the backend is running.");
-    } finally {
-      setLoading(false);
-    }
+    }, 400);
   };
 
   return (
@@ -119,11 +104,7 @@ export default function Login() {
             )}
           </div>
 
-          <button
-            type="submit"
-            className="login-btn"
-            disabled={loading || (!captchaDone && !useFakeCaptcha)}
-          >
+          <button type="submit" className="login-btn" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
