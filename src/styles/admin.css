@@ -1,18 +1,1 @@
-.admin-page {
-  min-height: 100vh;
-  background: #d9f2d9;
-  padding: 40px;
-}
-
-.menu {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.section {
-  background: white;
-  padding: 20px;
-  border-radius: 15px;
-  margin-top: 20px;
-}
+/* Admin styles are in layout.css */

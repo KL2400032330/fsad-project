@@ -1,57 +1,137 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import ReCAPTCHA from "react-google-recaptcha";
+import { useTheme } from "../context/ThemeContext";
 import "../styles/login.css";
 
 export default function Login() {
   const { role } = useParams();
   const navigate = useNavigate();
+  const { theme, toggle } = useTheme();
+  const captchaRef = useRef(null);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaDone, setCaptchaDone] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+  const useFakeCaptcha = !SITE_KEY || SITE_KEY === "your_site_key";
+
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
 
-    if (role === "admin") {
-      if (username === "admin" && password === "admin123") {
-        localStorage.setItem("user", JSON.stringify({ role: "admin" }));
-        navigate("/admin");
-      } else alert("Invalid Admin Credentials");
+    if (!captchaDone && !useFakeCaptcha) {
+      setError("Please complete the CAPTCHA verification.");
+      return;
     }
 
-    if (role === "student") {
-      const students = JSON.parse(localStorage.getItem("students")) || [];
-      const found = students.find(
-        s => s.username === username && s.password === password
-      );
+    setLoading(true);
+    try {
+      const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, role }),
+      });
 
-      if (found) {
-        localStorage.setItem("user", JSON.stringify({ role: "student", username }));
-        navigate("/student");
-      } else alert("Invalid Student Credentials");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Login failed");
+        captchaRef.current?.reset();
+        setCaptchaDone(false);
+        return;
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.role);
+      localStorage.setItem("username", data.username);
+
+      navigate(role === "admin" ? "/admin" : "/student");
+    } catch {
+      setError("Cannot connect to server. Make sure the backend is running.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="login-page">
-      <form className="login-box" onSubmit={handleSubmit}>
-        <h2>{role.toUpperCase()} LOGIN</h2>
+      <button className="theme-toggle-top" onClick={toggle} title="Toggle theme">
+        {theme === "light" ? "🌙" : "☀️"}
+      </button>
 
-        <input
-          placeholder="Username"
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
+      <div className="login-box">
+        <div className="login-header">
+          <span className="login-icon">{role === "admin" ? "🛡️" : "🎒"}</span>
+          <h2>{role === "admin" ? "Admin Login" : "Student Login"}</h2>
+          <p>Work-Study Management System</p>
+        </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        {error && <div className="alert alert-error">{error}</div>}
 
-        <button type="submit">Login</button>
-      </form>
+        <form onSubmit={handleLogin}>
+          <div className="login-field">
+            <label>Username</label>
+            <input
+              type="text"
+              placeholder={role === "admin" ? "admin" : "Enter your username"}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+
+          <div className="login-field">
+            <label>Password</label>
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="captcha-wrap">
+            {useFakeCaptcha ? (
+              <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--text2)", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={captchaDone}
+                  onChange={(e) => setCaptchaDone(e.target.checked)}
+                  style={{ width: 18, height: 18 }}
+                />
+                I am not a robot ✅
+              </label>
+            ) : (
+              <ReCAPTCHA
+                ref={captchaRef}
+                sitekey={SITE_KEY}
+                onChange={(token) => setCaptchaDone(!!token)}
+                onExpired={() => setCaptchaDone(false)}
+                theme={theme}
+              />
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="login-btn"
+            disabled={loading || (!captchaDone && !useFakeCaptcha)}
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+
+        <div className="login-back">
+          <button onClick={() => navigate("/")}>← Back to role selection</button>
+        </div>
+      </div>
     </div>
   );
 }

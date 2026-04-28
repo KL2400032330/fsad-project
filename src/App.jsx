@@ -10,7 +10,6 @@ export default function App() {
     <Routes>
       <Route path="/" element={<RoleSelection />} />
       <Route path="/login/:role" element={<Login />} />
-
       <Route
         path="/admin"
         element={
@@ -19,7 +18,6 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/student"
         element={

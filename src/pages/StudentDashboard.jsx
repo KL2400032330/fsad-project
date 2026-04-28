@@ -1,110 +1,253 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
+import { api } from "../utils/api";
 import "../styles/layout.css";
 
+const menuItems = [
+  { label: "Apply for Jobs", value: "jobs", icon: "💼" },
+  { label: "Log Hours", value: "hours", icon: "⏱️" },
+  { label: "My Applications", value: "applications", icon: "📋" },
+  { label: "My Feedback", value: "feedback", icon: "💬" },
+];
+
+function fmt(date) {
+  return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function StudentDashboard() {
-
-  const user = JSON.parse(localStorage.getItem("user"));
-  const [section, setSection] = useState("overview");
-
+  const username = localStorage.getItem("username") || "Student";
+  const [section, setSection] = useState("jobs");
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [feedback, setFeedback] = useState([]);
-  const [hoursInput, setHoursInput] = useState("");
-  const [reason, setReason] = useState("");
+  const [hours, setHours] = useState([]);
+  const [msg, setMsg] = useState({ type: "", text: "" });
 
-  useEffect(()=>{
-    setJobs(JSON.parse(localStorage.getItem("jobs")) || []);
-    setApplications(JSON.parse(localStorage.getItem("applications")) || []);
-    setFeedback(JSON.parse(localStorage.getItem("feedback")) || []);
-  },[]);
+  // forms
+  const [reasons, setReasons] = useState({});
+  const [hoursForm, setHoursForm] = useState({ hours: "", description: "" });
+
+  const flash = (type, text) => {
+    setMsg({ type, text });
+    setTimeout(() => setMsg({ type: "", text: "" }), 3000);
+  };
+
+  const load = useCallback(async () => {
+    try {
+      if (section === "jobs") {
+        setJobs(await api.get("/student/jobs"));
+        setApplications(await api.get("/student/applications"));
+      }
+      if (section === "applications") setApplications(await api.get("/student/applications"));
+      if (section === "hours") setHours(await api.get("/student/hours"));
+      if (section === "feedback") setFeedback(await api.get("/student/feedback"));
+    } catch (e) {
+      flash("error", e.message);
+    }
+  }, [section]);
+
+  useEffect(() => { load(); }, [load]);
 
   const logout = () => {
-    localStorage.removeItem("user");
+    localStorage.clear();
     window.location.href = "/";
   };
 
-  const apply = (job) => {
-    const updated = [
-      ...applications,
-      { student: user.username, job: job.title, reason, status: "Pending" }
-    ];
-    localStorage.setItem("applications", JSON.stringify(updated));
-    setApplications(updated);
-    setReason("");
+  const apply = async (job) => {
+    const reason = reasons[job._id] || "";
+    if (!reason.trim()) { flash("error", "Please enter a reason for applying."); return; }
+    try {
+      await api.post("/student/applications", { jobId: job._id, job: job.title, reason });
+      flash("success", `Applied for "${job.title}" successfully!`);
+      setReasons(r => ({ ...r, [job._id]: "" }));
+      setApplications(await api.get("/student/applications"));
+    } catch (e) { flash("error", e.message); }
   };
 
-  const logHours = () => {
-    const hrs = JSON.parse(localStorage.getItem("hours")) || [];
-    hrs.push({ student: user.username, hours: hoursInput });
-    localStorage.setItem("hours", JSON.stringify(hrs));
-    setHoursInput("");
+  const logHours = async (e) => {
+    e.preventDefault();
+    if (!hoursForm.hours || hoursForm.hours <= 0) { flash("error", "Enter valid hours."); return; }
+    try {
+      await api.post("/student/hours", hoursForm);
+      flash("success", "Hours logged successfully!");
+      setHoursForm({ hours: "", description: "" });
+      setHours(await api.get("/student/hours"));
+    } catch (e) { flash("error", e.message); }
   };
 
-  const menuItems = [
-    { label: "Apply Job", value: "jobs" },
-    { label: "Log Hours", value: "hours" },
-    { label: "My Applications", value: "applications" },
-    { label: "Feedback", value: "feedback" }
-  ];
+  const alreadyApplied = (jobId) => applications.some(a => a.jobId === jobId);
+  const totalHours = hours.reduce((sum, h) => sum + h.hours, 0);
 
   return (
-    <div className="layout student-bg">
-      <Sidebar menuItems={menuItems} setSection={setSection} logout={logout} />
+    <div className="layout">
+      <Sidebar menuItems={menuItems} section={section} setSection={setSection} logout={logout} title="Student Portal" />
 
       <div className="content">
+        {msg.text && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
 
+        {/* APPLY JOBS */}
         {section === "jobs" && (
-          <div className="card">
-            <h3>Apply for Job</h3>
-            {jobs.map(job=>(
-              <div key={job.id}>
-                <p>{job.title}</p>
-                <input
-                  placeholder="Why should you get this job?"
-                  value={reason}
-                  onChange={e=>setReason(e.target.value)}
-                />
-                <button onClick={()=>apply(job)}>Apply</button>
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="page-header">
+              <h2>Available Jobs</h2>
+              <p>Browse and apply for work-study positions, {username}</p>
+            </div>
+            <div className="card">
+              <h3>Open Positions ({jobs.length})</h3>
+              {jobs.length === 0 ? (
+                <div className="empty-state"><div className="empty-icon">💼</div><p>No jobs available right now</p></div>
+              ) : (
+                jobs.map(job => {
+                  const applied = alreadyApplied(job._id);
+                  return (
+                    <div className="job-card" key={job._id} style={{ flexDirection: "column", alignItems: "stretch" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                        <div className="job-card-info">
+                          <h4>{job.title}</h4>
+                          <p>{job.description || "No description provided"}</p>
+                          <p style={{ marginTop: 4, fontSize: 12 }}>Posted {fmt(job.postedAt)}</p>
+                        </div>
+                        {applied && <span className="badge badge-approved">Applied ✓</span>}
+                      </div>
+                      {!applied && (
+                        <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+                          <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+                            <label>Why should you get this job?</label>
+                            <input
+                              placeholder="Write your reason here..."
+                              value={reasons[job._id] || ""}
+                              onChange={e => setReasons(r => ({ ...r, [job._id]: e.target.value }))}
+                            />
+                          </div>
+                          <button className="btn-primary" style={{ flexShrink: 0 }} onClick={() => apply(job)}>
+                            Apply
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </>
         )}
 
+        {/* LOG HOURS */}
         {section === "hours" && (
-          <div className="card">
-            <h3>Log Work Hours</h3>
-            <input type="number"
-              value={hoursInput}
-              onChange={e=>setHoursInput(e.target.value)} />
-            <button onClick={logHours}>Submit</button>
-          </div>
+          <>
+            <div className="page-header">
+              <h2>Log Work Hours</h2>
+              <p>Record the hours you've worked</p>
+            </div>
+            <div className="stats-grid" style={{ gridTemplateColumns: "repeat(2, 1fr)", maxWidth: 400 }}>
+              <div className="stat-card">
+                <div className="stat-icon">⏱️</div>
+                <div className="stat-value">{totalHours}</div>
+                <div className="stat-label">Total Hours</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">📅</div>
+                <div className="stat-value">{hours.length}</div>
+                <div className="stat-label">Entries</div>
+              </div>
+            </div>
+
+            <div className="card">
+              <h3>Add Hours Entry</h3>
+              <form onSubmit={logHours}>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Hours Worked *</label>
+                    <input type="number" min="0.5" step="0.5" placeholder="e.g. 4"
+                      value={hoursForm.hours}
+                      onChange={e => setHoursForm({ ...hoursForm, hours: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Description</label>
+                    <input placeholder="What did you work on?" value={hoursForm.description}
+                      onChange={e => setHoursForm({ ...hoursForm, description: e.target.value })} />
+                  </div>
+                </div>
+                <button type="submit" className="btn-primary">⏱️ Log Hours</button>
+              </form>
+            </div>
+
+            <div className="card">
+              <h3>Hours History</h3>
+              {hours.length === 0 ? (
+                <div className="empty-state"><div className="empty-icon">⏱️</div><p>No hours logged yet</p></div>
+              ) : (
+                hours.map(h => (
+                  <div className="hours-entry" key={h._id}>
+                    <div>
+                      <div className="hrs-val">{h.hours} hrs</div>
+                      <div className="hrs-desc">{h.description || "No description"}</div>
+                    </div>
+                    <div className="hrs-date">{fmt(h.date)}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
         )}
 
+        {/* MY APPLICATIONS */}
         {section === "applications" && (
-          <div className="card">
-            <h3>My Applications</h3>
-            {applications
-              .filter(app=>app.student===user.username)
-              .map((app,i)=>(
-                <p key={i}>
-                  {app.job} - {app.status}
-                </p>
-              ))}
-          </div>
+          <>
+            <div className="page-header">
+              <h2>My Applications</h2>
+              <p>Track the status of your job applications</p>
+            </div>
+            <div className="card">
+              <h3>Application History ({applications.length})</h3>
+              {applications.length === 0 ? (
+                <div className="empty-state"><div className="empty-icon">📋</div><p>You haven't applied for any jobs yet</p></div>
+              ) : (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr><th>Job Title</th><th>Reason</th><th>Applied On</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                      {applications.map(app => (
+                        <tr key={app._id}>
+                          <td><strong>{app.job}</strong></td>
+                          <td style={{ maxWidth: 220 }}>{app.reason}</td>
+                          <td>{fmt(app.appliedAt)}</td>
+                          <td><span className={`badge badge-${app.status.toLowerCase()}`}>{app.status}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
+        {/* FEEDBACK */}
         {section === "feedback" && (
-          <div className="card">
-            <h3>Feedback from Admin</h3>
-            {feedback
-              .filter(f=>f.student===user.username)
-              .map((f,i)=>(
-                <p key={i}>{f.message}</p>
-              ))}
-          </div>
+          <>
+            <div className="page-header">
+              <h2>My Feedback</h2>
+              <p>Feedback from your admin / teacher</p>
+            </div>
+            <div className="card">
+              <h3>Received Feedback ({feedback.length})</h3>
+              {feedback.length === 0 ? (
+                <div className="empty-state"><div className="empty-icon">💬</div><p>No feedback received yet</p></div>
+              ) : (
+                feedback.map(f => (
+                  <div className="feedback-card" key={f._id}>
+                    <div className="fb-student">📝 Feedback from Admin</div>
+                    <div className="fb-msg">{f.message}</div>
+                    <div className="fb-date">{fmt(f.createdAt)}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
         )}
-
       </div>
     </div>
   );

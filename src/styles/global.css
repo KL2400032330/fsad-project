@@ -1,4 +1,92 @@
+:root {
+  --bg: #f0f4ff;
+  --bg2: #e8eeff;
+  --surface: #ffffff;
+  --surface2: #f7f9ff;
+  --border: #dde3f5;
+  --text: #1e2a4a;
+  --text2: #5a6a8a;
+  --primary: #4f6ef7;
+  --primary-dark: #3a56d4;
+  --primary-light: #eef1ff;
+  --accent: #7c3aed;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --sidebar-bg: #1e2a4a;
+  --sidebar-text: #c8d3f0;
+  --sidebar-hover: #2d3f6e;
+  --sidebar-active: #4f6ef7;
+  --shadow: 0 2px 16px rgba(79,110,247,0.10);
+  --shadow-lg: 0 8px 32px rgba(79,110,247,0.15);
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+[data-theme="dark"] {
+  --bg: #0f1629;
+  --bg2: #151e35;
+  --surface: #1a2540;
+  --surface2: #1e2d4a;
+  --border: #2a3a5e;
+  --text: #e8eeff;
+  --text2: #8a9bc0;
+  --primary: #6b84f8;
+  --primary-dark: #4f6ef7;
+  --primary-light: #1e2d4a;
+  --accent: #9d6ef8;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --sidebar-bg: #0d1526;
+  --sidebar-text: #8a9bc0;
+  --sidebar-hover: #1a2540;
+  --sidebar-active: #6b84f8;
+  --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s, color 0.3s;
 }
+
+input, textarea, select {
+  font-family: inherit;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  width: 100%;
+  font-size: 14px;
+  transition: border 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,110,247,0.12);
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 20px;
+  transition: all 0.2s;
+}
+
+h1, h2, h3, h4 { margin: 0 0 8px; color: var(--text); }
+p { margin: 0; color: var(--text2); }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
