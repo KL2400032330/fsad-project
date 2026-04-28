@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-import { jobStore, applicationStore, hoursStore, feedbackStore } from "../utils/storage";
+import { jobStore, applicationStore, hoursStore, feedbackStore, authStore } from "../utils/storage";
 import "../styles/layout.css";
 
 const menuItems = [
@@ -39,7 +39,7 @@ export default function StudentDashboard() {
 
   useEffect(() => { reload(); }, [section]);
 
-  const logout = () => { localStorage.clear(); window.location.href = "/"; };
+  const logout = () => { authStore.logout(); window.location.href = "/"; };
 
   const apply = (job) => {
     const reason = reasons[job._id] || "";

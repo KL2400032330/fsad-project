@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-import { studentStore, jobStore, applicationStore, hoursStore, feedbackStore } from "../utils/storage";
+import { studentStore, jobStore, applicationStore, hoursStore, feedbackStore, authStore } from "../utils/storage";
 import "../styles/layout.css";
 
 const menuItems = [
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
 
   useEffect(() => { reload(); }, [section]);
 
-  const logout = () => { localStorage.clear(); window.location.href = "/"; };
+  const logout = () => { authStore.logout(); window.location.href = "/"; };
 
   const addStudent = (e) => {
     e.preventDefault();

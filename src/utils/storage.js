@@ -27,7 +27,11 @@ export const authStore = {
     localStorage.setItem("username", username);
     return { ok: true };
   },
-  logout() { localStorage.removeItem("token"); localStorage.removeItem("role"); localStorage.removeItem("username"); }
+  logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("username");
+  }
 };
 
 // --- STUDENTS ---
